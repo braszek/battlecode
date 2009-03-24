@@ -14,6 +14,9 @@ public class RobotPlayer implements Runnable {
       	  case WORKER:
       		  player = new Worker(rc);   		  
       		  break;
+      	  case SOLDIER:
+      		  player = new Soldier(rc);
+      		  break;
       }
    }
    

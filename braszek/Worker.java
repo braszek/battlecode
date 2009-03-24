@@ -3,54 +3,29 @@ package braszek;
 import battlecode.common.*;
 
 public class Worker extends AbstractRobot {
-	private MapLocation myHome = null;
 	
 	public Worker(RobotController rc) {
 		super(rc);
 		state = RobotState.WORKER_INIT;
 	}
 
-	@Override
 	public void run() throws GameActionException {
+		super.run();
 		while(myRC.isMovementActive()) {
         	myRC.yield();
-        }
+        }		
 		waitUntilMovementIdle();
 		workerStrategy();
 		myRC.yield();
 	}
 	
-	private void waitUntilMovementIdle() {
-		while (myRC.getRoundsUntilMovementIdle() > 0) {
-			myRC.yield();
-		}
-	}
-	
-	   
-	private MapLocation findNearestFluxDeposit() throws GameActionException {
-		FluxDeposit[] deposits = myRC.senseNearbyFluxDeposits();
-		int bestDistance = Integer.MAX_VALUE;
-		MapLocation nearest = null;
-			   
-		for (FluxDeposit deposit : deposits) {
-			MapLocation currentLocation = myRC.senseFluxDepositInfo(deposit).location;
-			int currentDistance = myRC.getLocation().distanceSquaredTo(currentLocation);
-					
-			if (currentDistance < bestDistance) {
-				bestDistance = currentDistance;
-				nearest = currentLocation;
-			}
-		}
-		   
-		return nearest;
-	}
-	
-	
 	private void workerStrategy() throws GameActionException {
+		updateStatus();
 		switch (state) {
 			case WORKER_INIT:
-				myHome = findNearestFluxDeposit();
-				state = RobotState.WORKER_LOAD_BLOCK;
+				if (myHome != null) {
+					state = RobotState.WORKER_LOAD_BLOCK;
+				}
 				break;
 		   	case WORKER_FIND_PLACE_TO_UNLOAD_BLOCK:
 		   		goTo(myRC.getLocation().directionTo(myHome));
@@ -116,7 +91,7 @@ public class Worker extends AbstractRobot {
 		   			}
 		   				
 		   			if (blockLocation != null) {
-		   				if (myRC.getEventualEnergonLevel() > 2/3 * myRC.getMaxEnergonLevel()) {
+		   				if (myRC.getEventualEnergonLevel() > 2.0/3.0 * myRC.getMaxEnergonLevel()) {
 		   					if (myRC.canLoadBlockFromLocation(blockLocation)) {
 		   						myRC.loadBlockFromLocation(blockLocation);
 		   						state = RobotState.WORKER_FIND_PLACE_TO_UNLOAD_BLOCK;
@@ -124,7 +99,7 @@ public class Worker extends AbstractRobot {
 		   					else {
 		   						goTo(myRC.getLocation().directionTo(blockLocation));
 		   					}
-		   				} else {			
+		   				} else {
 		   					Direction direction = myRC.getDirection();
 		   					Direction current = direction;
 		   						
@@ -134,6 +109,9 @@ public class Worker extends AbstractRobot {
 		   				   
 		   					if (myRC.canLoadBlockFromLocation(myRC.getLocation().add(current)) && !myHome.isAdjacentTo(myRC.getLocation().add(current)) && !myHome.equals(myRC.getLocation().add(current))) {
 		   						blockLocation = myRC.getLocation().add(current);
+		   					}
+		   					else {
+		   						blockLocation = null;
 		   					}
 		   						
 		   					if (blockLocation != null) {
@@ -153,7 +131,22 @@ public class Worker extends AbstractRobot {
 		   		}
 		   		break;
 		}
+
 		transferEnergon();
+		myRC.yield();
+		sendEnemyLocation();
 	}
+
+	@Override
+	protected void receiveMessage(Message m) {
+		if (m.ints.length == 1) {
+			switch (MessageType.values()[m.ints[0]]) {
+				case SET_HOME:
+					setHome(m);
+					break;
+			}
+		}
+	}
+	
 
 }
