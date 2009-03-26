@@ -139,7 +139,7 @@ public class Worker extends AbstractRobot {
 
 	@Override
 	protected void receiveMessage(Message m) {
-		if (m.ints.length == 1) {
+		if (m.ints != null && m.strings != null && m.ints.length == 1 && m.strings.length == 2 && m.strings[0].equals(myRC.getTeam().toString())) {
 			switch (MessageType.values()[m.ints[0]]) {
 				case SET_HOME:
 					setHome(m);

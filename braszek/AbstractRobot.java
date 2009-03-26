@@ -72,6 +72,13 @@ public abstract class AbstractRobot {
 		}
 	}
 	
+	protected void sendMessage(Message m) throws GameActionException {
+		m.strings = new String[2];
+		m.strings[0] = myRC.getTeam().toString();
+		m.strings[1] = "TRUE";
+		myRC.broadcast(m);
+	}
+	
 	protected void sendEnemyLocation() throws GameActionException {
 		enemyLocations = findEnemy();
 		
@@ -80,7 +87,8 @@ public abstract class AbstractRobot {
 			m.ints = new int[1];
 			m.ints[0] = MessageType.ENEMY_LOCATIONS.ordinal();
 			m.locations = enemyLocations;
-			myRC.broadcast(m);
+			//myRC.broadcast(m);
+			sendMessage(m);
 		}
 		else {
 			enemyDistance = Integer.MAX_VALUE;

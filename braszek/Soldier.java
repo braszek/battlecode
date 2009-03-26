@@ -92,7 +92,8 @@ public class Soldier extends AbstractRobot {
 						m.ints[0] = MessageType.ATTACK_ENEMY.ordinal();
 						m.locations = new MapLocation[1];
 						m.locations[0] = enemyLocation;
-						myRC.broadcast(m);
+						//myRC.broadcast(m);
+						sendMessage(m);
 					}
 					else {
 						goTo(myDirection);
@@ -161,7 +162,8 @@ public class Soldier extends AbstractRobot {
 						m.ints[0] = MessageType.ATTACK_ENEMY.ordinal();
 						m.locations = new MapLocation[1];
 						m.locations[0] = enemyLocation;
-						myRC.broadcast(m);
+						//myRC.broadcast(m);
+						sendMessage(m);
 						
 					}
 					else {
@@ -265,7 +267,7 @@ public class Soldier extends AbstractRobot {
 
 	@Override
 	protected void receiveMessage(Message m) throws GameActionException {
-		if (m.ints.length == 1) {
+		if (m.ints != null && m.strings != null && m.ints.length == 1 && m.strings.length == 2 && m.strings[0].equals(myRC.getTeam().toString())) {
 			switch (MessageType.values()[m.ints[0]]) {
 				case SET_HOME:
 					setHome(m);

@@ -127,9 +127,7 @@ public class Archon extends AbstractRobot {
 		sendEnemyLocation();
 	}
 	
-	private void sendMessage(Message m) throws GameActionException {
-		myRC.broadcast(m);
-	}
+	
 	
 	private void spawnRobot(RobotType robotType, boolean onDeposit) throws GameActionException {
 		MapLocation bestLocation = null;
