@@ -256,6 +256,8 @@ public class Soldier extends AbstractRobot {
 				
 		}
 		transferEnergon();
+		myRC.yield();
+		sendSpam();
 	}
 	
 	private void setTarget(Message m) {
@@ -267,7 +269,7 @@ public class Soldier extends AbstractRobot {
 
 	@Override
 	protected void receiveMessage(Message m) throws GameActionException {
-		if (m.ints != null && m.strings != null && m.ints.length == 1 && m.strings.length == 2 && m.strings[0].equals(myRC.getTeam().toString())) {
+		if (m.ints != null && m.strings != null && m.ints.length == 1 && m.strings.length == 2 && m.strings[1].equals(myRC.getTeam().toString())) {
 			switch (MessageType.values()[m.ints[0]]) {
 				case SET_HOME:
 					setHome(m);

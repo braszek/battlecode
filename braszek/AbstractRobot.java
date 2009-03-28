@@ -74,8 +74,18 @@ public abstract class AbstractRobot {
 	
 	protected void sendMessage(Message m) throws GameActionException {
 		m.strings = new String[2];
-		m.strings[0] = myRC.getTeam().toString();
-		m.strings[1] = "TRUE";
+		m.strings[0] = "MQ_ATTACK";
+		m.strings[1] = myRC.getTeam().toString();
+		myRC.broadcast(m);
+	}
+	
+	protected void sendSpam() throws GameActionException {
+		Message m = new Message();
+		m.ints = new int[1];
+		m.locations = new MapLocation[1];
+		m.locations[0] = new MapLocation(0,0);
+		m.strings = new String[1];
+		m.strings[0] = "MQ_ATTACK";
 		myRC.broadcast(m);
 	}
 	

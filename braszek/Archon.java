@@ -125,6 +125,9 @@ public class Archon extends AbstractRobot {
 		transferEnergon();
 		myRC.yield();
 		sendEnemyLocation();
+		
+		myRC.yield();
+		sendSpam();
 	}
 	
 	
