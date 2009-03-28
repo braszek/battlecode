@@ -10,7 +10,7 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
 public class Soldier extends AbstractRobot {
-	private Robot enemy;
+	private RobotInfo enemy;
 	private MapLocation enemyLocation;
 	private boolean kamikadze;
 
@@ -34,7 +34,6 @@ public class Soldier extends AbstractRobot {
 	}
 	
 	private void chooseEnemy(MapLocation[] enemyLocations) throws GameActionException {
-		enemyLocation = null;
 		enemy = null;
 		int enemyDistance = Integer.MAX_VALUE;
 		
@@ -44,12 +43,15 @@ public class Soldier extends AbstractRobot {
 			if (distance < enemyDistance && RobotType.SOLDIER.energonUpkeep() * distance * 2 < myRC.getEventualEnergonLevel()) {
 				enemyDistance = distance;
 				enemyLocation = eLoc;
+				
 				try {
-					if (myRC.senseAirRobotAtLocation(eLoc) != null) {
-						enemy = myRC.senseAirRobotAtLocation(eLoc);
+					Robot robot = myRC.senseAirRobotAtLocation(eLoc);
+					if (robot == null) {
+						robot = myRC.senseGroundRobotAtLocation(eLoc);
 					}
-					else {
-						enemy = myRC.senseGroundRobotAtLocation(eLoc);
+					
+					if (robot != null) {
+						enemy = myRC.senseRobotInfo(robot);
 					}
 				}
 				catch (GameActionException e) {
@@ -84,15 +86,14 @@ public class Soldier extends AbstractRobot {
 					enemyLocations = findEnemy();
 					chooseEnemy(enemyLocations);
 					
-					if (enemyLocation != null) {
+					if (enemy != null) {
 						state = RobotState.SOLDIER_GO_TO_ENEMY;
 						
 						Message m =  new Message();
 						m.ints = new int[1];
 						m.ints[0] = MessageType.ATTACK_ENEMY.ordinal();
 						m.locations = new MapLocation[1];
-						m.locations[0] = enemyLocation;
-						//myRC.broadcast(m);
+						m.locations[0] = enemy.location;
 						sendMessage(m);
 					}
 					else {
@@ -113,58 +114,15 @@ public class Soldier extends AbstractRobot {
 					enemyLocations = findEnemy();
 					chooseEnemy(enemyLocations);
 										
-					/*enemyLocation = null;
-					int enemyDistance = Integer.MAX_VALUE;
-					
-					for (MapLocation eLoc : enemyLocations) {
-						int distance = myRC.getLocation().distanceSquaredTo(eLoc);
-						
-						if (distance < enemyDistance) {
-							enemyDistance = distance;
-							enemyLocation = eLoc;
-							if (myRC.senseAirRobotAtLocation(eLoc) != null) {
-								enemy = myRC.senseAirRobotAtLocation(eLoc);
-							}
-							else {
-								enemy = myRC.senseGroundRobotAtLocation(eLoc);
-							}
-						}
-					}*/
-					
-					
-					
-					/*
-					ArrayList<Robot> allRobots = new ArrayList<Robot>();
-					Robot[] airRobots = myRC.senseNearbyAirRobots(); 
-					Robot[] groundRobots = myRC.senseNearbyGroundRobots();
-					allRobots.addAll(Arrays.asList(airRobots));
-					allRobots.addAll(Arrays.asList(groundRobots));
-					int enemyDistance = Integer.MAX_VALUE;
-					enemyLocation = null;
-				
-					for (Robot robot : allRobots) {
-						RobotInfo info = myRC.senseRobotInfo(robot);
-						if (!myRC.getTeam().equals(info.team)) {
-							int distance = myRC.getLocation().distanceSquaredTo(info.location);
-							if (distance < enemyDistance) {
-								enemy = robot;
-								enemyDistance = distance;
-								enemyLocation = info.location;
-							}
-						}
-					}
-					*/
-					if (enemyLocation != null) {
+					if (enemy != null) {
 						state = RobotState.SOLDIER_GO_TO_ENEMY;
 						
 						Message m =  new Message();
 						m.ints = new int[1];
 						m.ints[0] = MessageType.ATTACK_ENEMY.ordinal();
 						m.locations = new MapLocation[1];
-						m.locations[0] = enemyLocation;
-						//myRC.broadcast(m);
+						m.locations[0] = enemy.location;
 						sendMessage(m);
-						
 					}
 					else {
 						if (myRC.getEventualEnergonLevel() > 2.0/3.0 * myRC.getMaxEnergonLevel()) {
@@ -177,20 +135,30 @@ public class Soldier extends AbstractRobot {
 					}
 				}
 				if (state == RobotState.SOLDIER_FIND_ENEMY) {
-					/*
-					if (myRC.getEventualEnergonLevel() > 2.0/3.0 * myRC.getMaxEnergonLevel()) {
-						goTo(myRC.getDirection());
-					}
-					else {
-						state = RobotState.SOLDIER_GO_HOME;
-					}*/
 					state = RobotState.SOLDIER_PATROL;
 				}
 				break;
 			case SOLDIER_GO_TO_ENEMY:
-				if (enemyLocation != null) {
-					goTo(myRC.getLocation().directionTo(enemyLocation));
-					if (myRC.getLocation().isAdjacentTo(enemyLocation)) {
+				if (enemy != null) {					
+					if (myRC.getLocation().isAdjacentTo(enemy.location)) {
+						state = RobotState.SOLDIER_ATTACK_ENEMY;
+					}
+					else {
+						goTo(myRC.getLocation().directionTo(enemy.location));
+					}
+				}
+				else {
+					if (enemyLocation != null) {
+						goTo(myRC.getLocation().directionTo(enemyLocation));
+						if (findEnemy() != null) {
+							state = RobotState.SOLDIER_FIND_ENEMY;
+						}
+					}
+					else {
+						state = RobotState.SOLDIER_PATROL;
+					}
+				}
+						/*
 						if (enemy != null) {
 							try {
 								myDirection = myRC.getDirection();
@@ -224,10 +192,31 @@ public class Soldier extends AbstractRobot {
 							state = RobotState.SOLDIER_PATROL;
 						}
 					}
-				}
+				}*/
 			
 				break;
 			case SOLDIER_ATTACK_ENEMY:
+				if (enemy.location.isAdjacentTo(myRC.getLocation())) {
+					if (myRC.getEnergonLevel() > myRC.getRobotType().attackPower()) {
+						try {
+							if (enemy.type.isAirborne()) {
+								myRC.attackAir(enemy.location);
+							} else {
+								myRC.attackGround(enemy.location);
+							}
+						}
+						catch (GameActionException e) {
+							//state = RobotState.SOLDIER_PATROL;
+						}
+					}
+					else {
+						goTo(myRC.getLocation().directionTo(myHome));
+					}
+				}
+				else {
+					goTo(myRC.getLocation().directionTo(enemy.location));
+				}
+				/*
 				try {
 					RobotInfo enemyInfo = myRC.senseRobotInfo(enemy);
 					if (enemyInfo.location.isAdjacentTo(myRC.getLocation())) {
@@ -251,7 +240,7 @@ public class Soldier extends AbstractRobot {
 					//state = RobotState.SOLDIER_FIND_ENEMY;
 					state = RobotState.SOLDIER_PATROL;
 				}
-				
+				*/
 				break;
 				
 		}
@@ -260,9 +249,9 @@ public class Soldier extends AbstractRobot {
 		sendSpam();
 	}
 	
-	private void setTarget(Message m) {
+	private void setTarget(Message m) throws GameActionException {
 		if (MessageType.values()[m.ints[0]] == MessageType.ATTACK_ENEMY) {
-			enemyLocation = m.locations[0];
+			chooseEnemy(m.locations);
 			state = RobotState.SOLDIER_GO_TO_ENEMY;
 		}
 	}
@@ -275,12 +264,12 @@ public class Soldier extends AbstractRobot {
 					setHome(m);
 					break;
 				case ATTACK_ENEMY:
-					if (enemyLocation == null) {
+					if (enemy == null) {
 						setTarget(m);
 					}
 					break;
 				case ENEMY_LOCATIONS:
-					if (enemyLocation == null) {
+					if (enemy == null) {
 						chooseEnemy(m.locations);
 						state = RobotState.SOLDIER_GO_TO_ENEMY;
 					}
